@@ -9,7 +9,9 @@ import mlflow.sklearn
 import os
 
 # Step 1: Fetch Data
-def fetch_stock_data(symbol, start_date, end_date):
+def fetch_stock_data(symbol, years_ago):
+    end_date = pd.to_datetime('today')
+    start_date = end_date - pd.DateOffset(years=years_ago)
     data = yf.download(symbol, start=start_date, end=end_date)
     return data
 
@@ -65,17 +67,18 @@ def make_predictions(model, X_today):
 if __name__ == "__main__":
     # Example usage
     symbol = "AAPL"
-    start_date = "2022-01-01"
-    end_date = pd.to_datetime('today').strftime('%Y-%m-%d')  # Fetch data until today
+    years_ago = 2  # Fetch data for the past two years
 
     # Step 1: Fetch Data
-    stock_data = fetch_stock_data(symbol, start_date, end_date)
+    stock_data = fetch_stock_data(symbol, years_ago)
 
     # Step 2: Preprocess Data
     X_train, X_test, y_train, y_test = preprocess_data(stock_data)
 
     # Train Model with all data until yesterday
     run_id = train_model(X_train, y_train)
+
+    print(run_id)
 
     # Step 4: Predict
     # Load the model from MLflow dynamically
