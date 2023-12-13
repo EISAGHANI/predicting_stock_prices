@@ -19,3 +19,8 @@ pip install mlflow
 pip install yfinance
 ```
 
+### Start it
+```
+python mlflow_stock_prediction_script.py
+```
+
