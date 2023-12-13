@@ -1,4 +1,5 @@
-# predicting_stock_prices
+# Predict stock prices with MLOps
+The target is to use historical data to predict the closing price of tomorrow.
 
 ## How to use
 Best practice is to have some version of conda installed.
@@ -18,4 +19,3 @@ pip install mlflow
 pip install yfinance
 ```
 
-The target is to use historical data to predict the closing price of tomorrow.
