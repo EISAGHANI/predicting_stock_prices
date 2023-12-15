@@ -13,6 +13,7 @@ def fetch_stock_data(symbol, years_ago):
     end_date = pd.to_datetime('today')
     start_date = end_date - pd.DateOffset(years=years_ago)
     data = yf.download(symbol, start=start_date, end=end_date)
+    print(data)
     return data
 
 # Step 2: Preprocess Data
@@ -77,8 +78,6 @@ if __name__ == "__main__":
 
     # Train Model with all data until yesterday
     run_id = train_model(X_train, y_train)
-
-    print(run_id)
 
     # Step 4: Predict
     # Load the model from MLflow dynamically
