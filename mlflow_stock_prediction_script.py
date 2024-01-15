@@ -7,7 +7,9 @@ from sklearn.metrics import mean_squared_error
 import mlflow
 import mlflow.sklearn
 import os
-
+from tensorflow import keras
+from tensorflow.keras.optimizers import Adam
+ 
 # Step 1: Fetch Data
 def fetch_stock_data(symbol, years_ago):
     end_date = pd.to_datetime('today')
@@ -18,7 +20,6 @@ def fetch_stock_data(symbol, years_ago):
 
 # Step 2: Preprocess Data
 def preprocess_data(data):
-    # Assuming you have a 'Close' column in your data
     features = data['Close'].values[:-1].reshape(-1, 1)
     labels = data['Close'].shift(-1).dropna().values
 
@@ -38,31 +39,58 @@ def train_model(X_train, y_train):
 
     with mlflow.start_run():
         # Train a linear regression model
-        model = LinearRegression()
+        model = keras.models.Sequential()
+
+        # Add an LSTM layer with 64 units, returning sequences, and specifying input shape
+        model.add(keras.layers.LSTM(units=64,
+                                    return_sequences=True,
+                                    input_shape=(X_train.shape[1], 1)))
+
+        # Add another LSTM layer with 64 units
+        model.add(keras.layers.LSTM(units=64))
+
+        # Add a Dense layer with 32 units
+        model.add(keras.layers.Dense(32))
+
+        # Add a Dropout layer with a dropout rate of 0.5
+        model.add(keras.layers.Dropout(0.5))
+
+        # Add a Dense layer with 1 unit (output layer)
+        model.add(keras.layers.Dense(1))
+
+        model.compile(optimizer=keras.optimizers.Adam(), loss='mse')
+
         model.fit(X_train, y_train)
 
         run_id = mlflow.active_run().info.run_id
 
         # Log metrics
-        mlflow.log_param("model", "linear_regression")
+        mlflow.log_param("model", "tensorflow")
         mlflow.log_param("data", "stock_prices")
         mlflow.log_metric("mse", mean_squared_error(y_train, model.predict(X_train)))
 
         # Log the model with the name "model" under the "artifacts" directory
-        mlflow.sklearn.log_model(sk_model=model, artifact_path="model")
+        mlflow.tensorflow.log_model(model, artifact_path="model")
 
     return run_id
 
 
 # Step 4: Predict
 def make_predictions(model, X_today):
+    # Reshape X_today for LSTM input
+    X_today = X_today.reshape(1, 1, 1)
+
     # Make predictions for tomorrow
-    prediction_tomorrow = model.predict(X_today.reshape(1, -1))
+    prediction_tomorrow = model.predict(X_today)
+
+    # Flatten the predicted array
+    prediction_tomorrow_flat = prediction_tomorrow.flatten()
 
     # Create a DataFrame with predictions
-    result_df = pd.DataFrame({"Predicted Tomorrow": prediction_tomorrow})
+    result_df = pd.DataFrame({"Predicted Tomorrow": prediction_tomorrow_flat})
 
     return result_df
+
 
 # Main Script
 if __name__ == "__main__":
@@ -82,7 +110,7 @@ if __name__ == "__main__":
     # Step 4: Predict
     # Load the model from MLflow dynamically
     model_path = f"mlruns/0/{run_id}/artifacts/model"  # Adjust the path accordingly
-    model = mlflow.sklearn.load_model(model_path)
+    model = mlflow.tensorflow.load_model(model_path)
 
     # Use the last closing price as input for prediction
     X_today = stock_data['Close'].values[-1]
