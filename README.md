@@ -17,10 +17,18 @@ conda activate mlflow
 pip install mlflow
 
 pip install yfinance
+
+pip install pandas
+
+pip install sklearn
+
+pip install flask
+
+pip install plotly
 ```
 
 ### Start it
 ```
-python mlflow_stock_prediction_script.py
+python mlflow_predict_stock_prices.py
 ```
 
