@@ -25,10 +25,18 @@ pip install sklearn
 pip install flask
 
 pip install plotly
+
+pip install schedule
 ```
 
 ### Start it
 ```
 python mlflow_predict_stock_prices.py
+```
+
+To make the predictions on a sheduled basis please start it like this:
+
+```
+python scheduler.py
 ```
 

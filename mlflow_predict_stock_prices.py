@@ -98,11 +98,6 @@ def plot_stock_predictions(stock_data, predicted_value):
 def index():
     if request.method == 'POST':
         symbol = request.form['tickerSymbol'].upper()
-        interval = request.form['interval']  
-
-        interval_seconds = get_interval_seconds(interval)
-
-        schedule_prediction(symbol, interval_seconds)
 
         return render_template('index.html')
     else:
