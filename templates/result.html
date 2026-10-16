@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}{{ result.symbol }} forecast · Stock Forecast{% endblock %}
+
+{% block content %}
+{% set up = result.change >= 0 %}
+<section class="result-head">
+    <div>
+        <a href="{{ url_for('index') }}" class="back-link">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+            New prediction
+        </a>
+        <h1 class="ticker">{{ result.symbol }}</h1>
+        <p class="muted">Trained on {{ result.years }} year{{ 's' if result.years > 1 }} of daily closes
+            · last close {{ result.last_date.strftime('%b %d, %Y') }}</p>
+    </div>
+
+    <form class="inline-search" action="{{ url_for('predict') }}" method="get" data-loading>
+        <input type="text" name="symbol" placeholder="Another ticker" maxlength="15" required
+               autocomplete="off" spellcheck="false" aria-label="Ticker symbol">
+        <input type="hidden" name="years" value="{{ result.years }}">
+        <button type="submit" class="btn btn-primary btn-sm">Predict</button>
+    </form>
+</section>
+
+<section class="kpis">
+    <article class="kpi kpi-hero">
+        <span class="kpi-label">Predicted close · {{ result.forecast_date.strftime('%a, %b %d') }}</span>
+        <span class="kpi-value num">${{ '%.2f'|format(result.predicted_close) }}</span>
+        <span class="delta {{ 'delta-up' if up else 'delta-down' }}">
+            <svg viewBox="0 0 24 24" aria-hidden="true">{% if up %}<path d="M12 19V5M6 11l6-6 6 6"/>{% else %}<path d="M12 5v14M6 13l6 6 6-6"/>{% endif %}</svg>
+            <span class="num">{{ '%+.2f'|format(result.change) }} ({{ '%+.2f'|format(result.change_pct) }}%)</span>
+            <span class="delta-text">vs last close</span>
+        </span>
+    </article>
+    <article class="kpi">
+        <span class="kpi-label">Last close</span>
+        <span class="kpi-value num">${{ '%.2f'|format(result.last_close) }}</span>
+        <span class="kpi-sub">{{ result.last_date.strftime('%b %d, %Y') }}</span>
+    </article>
+    <article class="kpi">
+        <span class="kpi-label">Test RMSE</span>
+        <span class="kpi-value num">${{ '%.2f'|format(result.metrics.test_rmse) }}</span>
+        <span class="kpi-sub">Typical error on held-out days</span>
+    </article>
+    <article class="kpi">
+        <span class="kpi-label">Test R²</span>
+        <span class="kpi-value num">{{ '%.3f'|format(result.metrics.test_r2) }}</span>
+        <span class="kpi-sub">MAE ${{ '%.2f'|format(result.metrics.test_mae) }}</span>
+    </article>
+</section>
+
+<section class="card">
+    <div class="card-head">
+        <div>
+            <h2>Price history &amp; forecast</h2>
+            <div class="legend">
+                <span class="legend-item"><i class="swatch swatch-line"></i>Actual close</span>
+                <span class="legend-item"><i class="swatch swatch-dash"></i>Model on test period</span>
+                <span class="legend-item"><i class="swatch swatch-dot"></i>Forecast</span>
+            </div>
+        </div>
+        <div class="segmented segmented-sm" id="rangePicker" role="group" aria-label="Chart range">
+            <button type="button" data-range="1M">1M</button>
+            <button type="button" data-range="3M">3M</button>
+            <button type="button" data-range="6M">6M</button>
+            <button type="button" data-range="ALL" class="active">All</button>
+        </div>
+    </div>
+    <div id="chart" class="chart" role="img" aria-label="{{ result.symbol }} closing price history with next-day forecast"></div>
+</section>
+
+<section class="grid-2">
+    <article class="card">
+        <h2>Recent closes</h2>
+        <table class="table">
+            <thead><tr><th>Date</th><th class="r">Close</th><th class="r">Change</th></tr></thead>
+            <tbody>
+            {% for row in rows %}
+                <tr>
+                    <td>{{ row.date.strftime('%b %d, %Y') }}</td>
+                    <td class="r num">${{ '%.2f'|format(row.close) }}</td>
+                    <td class="r num {{ 'pos' if row.change_pct >= 0 else 'neg' }}">{{ '%+.2f'|format(row.change_pct) }}%</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </article>
+
+    <article class="card">
+        <h2>MLflow run</h2>
+        <dl class="details">
+            <dt>Run ID</dt>
+            <dd class="mono">
+                <span id="runId">{{ result.run_id }}</span>
+                <button type="button" class="copy-btn" data-copy="{{ result.run_id }}" aria-label="Copy run ID">Copy</button>
+            </dd>
+            <dt>Model</dt><dd>Linear regression · Close(t) → Close(t+1)</dd>
+            <dt>Split</dt><dd>Chronological, last 20% held out</dd>
+            <dt>Train RMSE</dt><dd class="num">${{ '%.2f'|format(result.metrics.train_rmse) }}</dd>
+            <dt>Test MSE</dt><dd class="num">{{ '%.3f'|format(result.metrics.test_mse) }}</dd>
+        </dl>
+        <p class="hint">Explore every run with <code>mlflow ui --port 5001</code></p>
+    </article>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script id="chartData" type="application/json">{{ chart|tojson }}</script>
+<script src="{{ url_for('plotly_js') }}"></script>
+<script src="{{ url_for('static', filename='js/chart.js') }}"></script>
+{% endblock %}

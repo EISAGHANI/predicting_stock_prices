@@ -1,22 +1,74 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stock Prediction</title>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
-</head>
-<body>
-    <div class="container mt-5">
-        <h1 class="mb-4">Stock Prediction with MLflow</h1>
-        <form class="form-inline" action="/predict" method="post">
-            <div class="form-group mb-2">
-                <label for="tickerSymbol" class="sr-only">Enter Ticker Symbol:</label>
-                <input type="text" class="form-control" id="tickerSymbol" name="tickerSymbol" required>
-            </div>
-            <button type="submit" class="btn btn-primary mb-2 ml-2">Predict</button>
-        </form>
-    </div>
-</body>
-</html>
+{% extends "base.html" %}
+
+{% block content %}
+<section class="hero">
+    <span class="eyebrow">MLOps demo · Flask · MLflow</span>
+    <h1>Predict tomorrow's closing price</h1>
+    <p class="lead">Enter any ticker. We fetch its price history, train a fresh regression model,
+        log the run to MLflow and forecast the next trading day.</p>
+
+    <form class="search-card" action="{{ url_for('predict') }}" method="get" data-loading>
+        {% if error %}
+        <div class="alert" role="alert">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 7v6M12 16.5v.5"/></svg>
+            <span>{{ error }}</span>
+        </div>
+        {% endif %}
+
+        <div class="search-row">
+            <label class="field field-ticker">
+                <span class="field-label">Ticker symbol</span>
+                <input type="text" name="symbol" id="symbol" value="{{ symbol or '' }}" placeholder="e.g. AAPL"
+                       autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="15" required autofocus>
+            </label>
+
+            <fieldset class="field">
+                <legend class="field-label">History</legend>
+                <div class="segmented">
+                    {% for y in allowed_years %}
+                    <label>
+                        <input type="radio" name="years" value="{{ y }}" {% if y == (years or default_years) %}checked{% endif %}>
+                        <span>{{ y }}Y</span>
+                    </label>
+                    {% endfor %}
+                </div>
+            </fieldset>
+
+            <button type="submit" class="btn btn-primary">
+                Predict
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            </button>
+        </div>
+
+        <div class="chips">
+            <span class="chips-label">Popular:</span>
+            {% for t in popular_tickers %}
+            <button type="button" class="chip" data-ticker="{{ t }}">{{ t }}</button>
+            {% endfor %}
+        </div>
+    </form>
+</section>
+
+<section class="steps">
+    <article class="step">
+        <span class="step-num">1</span>
+        <h3>Fetch</h3>
+        <p>Daily closing prices downloaded live from Yahoo Finance.</p>
+    </article>
+    <article class="step">
+        <span class="step-num">2</span>
+        <h3>Train</h3>
+        <p>Close(t) → Close(t+1) linear regression, evaluated on the most recent 20% of days.</p>
+    </article>
+    <article class="step">
+        <span class="step-num">3</span>
+        <h3>Track</h3>
+        <p>Parameters, RMSE/MAE/R² and the model itself are logged to MLflow.</p>
+    </article>
+    <article class="step">
+        <span class="step-num">4</span>
+        <h3>Forecast</h3>
+        <p>The logged model is reloaded and predicts the next trading day's close.</p>
+    </article>
+</section>
+{% endblock %}
