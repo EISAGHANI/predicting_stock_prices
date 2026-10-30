@@ -30,3 +30,9 @@ SCHEDULE_SYMBOLS = [s.strip().upper() for s in os.environ.get("SCHEDULE_SYMBOLS"
 
 # Quick-pick tickers shown on the home page
 POPULAR_TICKERS = ("AAPL", "MSFT", "NVDA", "TSLA", "AMZN", "GOOGL", "META")
+
+# Day Trader skills (vendored from github.com/Jakeschincariol/day-trader-skill)
+SKILLS_DIR = BASE_DIR / "vendor" / "day_trader_skill"
+# Each mode gets its own working folder; the skills share files in its trader/ subfolder.
+TRADER_WORKSPACE = Path(os.environ.get("TRADER_WORKSPACE", BASE_DIR / "trader_workspace"))
+TRADER_MAX_RUN_SECONDS = int(os.environ.get("TRADER_MAX_RUN_SECONDS", 30 * 60))

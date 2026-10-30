@@ -8,6 +8,7 @@ from . import config
 from .charts import chart_payload, recent_rows
 from .data import TickerError
 from .pipeline import run_prediction
+from .trader.routes import bp as trader_bp
 
 log = logging.getLogger(__name__)
 
@@ -18,6 +19,7 @@ def create_app() -> Flask:
         template_folder=str(config.BASE_DIR / "templates"),
         static_folder=str(config.BASE_DIR / "static"),
     )
+    app.register_blueprint(trader_bp)
 
     @app.context_processor
     def inject_globals():

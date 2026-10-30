@@ -2,6 +2,8 @@
 
 An end-to-end MLOps demo that predicts a stock's **next trading day closing price**. Every prediction fetches live data from Yahoo Finance, trains a fresh model, logs the run (parameters, metrics and the model itself) to **MLflow**, reloads the logged model and serves the forecast in a **Flask** web app with an interactive **Plotly** chart. A scheduler can run the same pipeline automatically every day.
 
+A second page, the **Day Trader Lab**, runs the 11 skills of the [day-trader-skill](https://github.com/Jakeschincariol/day-trader-skill) pack from the browser and shows, step by step and in plain words, what each one does behind the scenes.
+
 ---
 
 ## ✨ Features
@@ -13,6 +15,7 @@ An end-to-end MLOps demo that predicts a stock's **next trading day closing pric
 - **Shareable results**: predictions are plain GET URLs, e.g. `/predict?symbol=NVDA&years=2`.
 - **Scheduler with a CLI**: choose the symbols and time, or run once with `--now`.
 - **Works offline-first**: plotly.js is served from the installed Python package, so no chart CDN is needed.
+- **Day Trader Lab** (`/trader`): every day-trading skill (scanner, news, entry timer, exit planner, time machine, budget, risk, order tickets, alerts, earnings analyst, Congress trade tracker) with a form, a live step-by-step timeline of the run, plain-English explanations of the result and drawings of the saved files. A demo mode replays a real trade from Oct 19 2026 at any hour, without the internet.
 
 ---
 
@@ -46,19 +49,28 @@ predicting_stock_prices/
 │   ├── model.py              # Training, metrics, MLflow logging & loading
 │   ├── pipeline.py           # run_prediction(): end-to-end flow + PredictionResult
 │   ├── charts.py             # Chart / table data for the result page
-│   └── web.py                # Flask app factory and routes
+│   ├── web.py                # Flask app factory and routes
+│   └── trader/               # Day Trader Lab
+│       ├── catalog.py        # The 11 skills: actions, form fields, plain-English steps, glossary
+│       ├── runner.py         # Validates input, runs a skill script, streams its output
+│       └── routes.py         # /trader page and its JSON API
 │
 ├── templates/
 │   ├── base.html             # Layout: header, theme toggle, loading overlay
 │   ├── index.html            # Search page
-│   └── result.html           # Prediction dashboard
+│   ├── result.html           # Prediction dashboard
+│   └── trader.html           # Day Trader Lab
 │
 ├── static/
 │   ├── css/style.css         # Design tokens (light/dark) and components
+│   ├── css/trader.css        # Day Trader Lab styles
 │   └── js/
 │       ├── app.js            # Theme toggle, loading state, chips, copy button
-│       └── chart.js          # Plotly chart, themed from CSS tokens
+│       ├── chart.js          # Plotly chart, themed from CSS tokens
+│       └── trader.js         # Day Trader Lab: forms, live run timeline, result drawings
 │
+├── vendor/day_trader_skill/  # The skill pack, unmodified (MIT), see vendor/README.md
+├── trader_workspace/         # Files the skills write, one folder per mode (git-ignored)
 └── mlruns/                   # MLflow tracking store (git-ignored)
 ```
 
@@ -102,6 +114,16 @@ mlflow ui --port 5001
 
 Open **http://127.0.0.1:5001** and select the `stock-price-prediction` experiment to compare runs, metrics and logged models.
 
+### Day Trader Lab
+
+With the web app running, open **http://127.0.0.1:5005/trader** (or click **Day Trader** in the top bar).
+
+- **Demo replay** (the default) uses real data recorded on Monday Oct 19 2026 and pins the clock to that day. Click through steps 1 to 8 in order: each skill reads what the one before saved. No internet needed.
+- **Live data** reads free public data right now: Yahoo Finance, SEC EDGAR, Nasdaq Trader and the House Clerk. No API keys. The intraday skills only find something while the NYSE is open (9:30 to 16:00 New York time).
+- **Settings** holds your rules (budget, max loss per trade, trading hours...). In live mode, the News Monitor's SEC filings and the Earnings Analyst need your name and email there: the SEC asks every visitor to identify themselves.
+- Nothing on the page can place an order. The Order Executor shows the ticket and keeps a paper log; it is not connected to any broker.
+- Optional: install [Poppler](https://poppler.freedesktop.org/) so `pdftotext` is on the PATH, and the Pelosi Tracker can read congressional trade report PDFs itself.
+
 ### Scheduler
 
 ```powershell
@@ -125,6 +147,9 @@ All settings live in `stock_predictor/config.py` and can be overridden with envi
 | `MLFLOW_EXPERIMENT` | `stock-price-prediction` | MLflow experiment name |
 | `SCHEDULE_TIME` | `12:00` | Default daily time for `scheduler.py` |
 | `SCHEDULE_SYMBOLS` | `AAPL` | Comma-separated default symbols for `scheduler.py` |
+| `TRADER_WORKSPACE` | `./trader_workspace` | Where the Day Trader skills write their files |
+| `TRADER_MAX_RUN_SECONDS` | `1800` | A skill run is stopped after this long |
+| `SEC_USER_AGENT` | (unset) | `"Your Name you@example.com"`, an alternative to entering it in the Lab's Settings |
 
 ---
 
@@ -136,8 +161,10 @@ All settings live in `stock_predictor/config.py` and can be overridden with envi
 
 **`PermissionError: [WinError 5]` under `mlruns/`**: a copied `mlruns/` folder can reference another machine's paths. Delete `mlruns/` and MLflow will recreate it.
 
+**Day Trader skill says the market is closed**: in live mode the scanner and entry timer read today's intraday candles, which only exist while the NYSE is open. Use Demo replay outside those hours.
+
 **"No price data found"**: the symbol doesn't exist on Yahoo Finance or has been delisted. Non-US listings need their suffix, e.g. `SAP.DE` or `RELIANCE.NS`.
 
 ---
 
-> ⚠️ This is a learning project. A one-feature linear regression essentially predicts "tomorrow ≈ today". Don't use it for real trading decisions.
+> ⚠️ This is a learning project. A one-feature linear regression essentially predicts "tomorrow ≈ today". Don't use it for real trading decisions. The same goes for the Day Trader Lab: it is education and tooling, not financial advice.

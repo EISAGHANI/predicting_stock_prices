@@ -9,6 +9,9 @@ mlruns/
 mlartifacts/
 mlflow.db
 
+# Day Trader skills: files the skills write while you use them
+trader_workspace/
+
 # Editors / OS
 .vscode/
 .idea/

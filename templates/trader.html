@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block title %}Day Trader Lab · Stock Forecast{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/trader.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="lab-hero">
+    <div>
+        <span class="eyebrow">11 skills · day-trader-skill</span>
+        <h1>Day Trader Lab</h1>
+        <p class="lead">Run every skill of a day-trading toolkit and watch what it does behind the scenes, step by step.
+            Start in <strong>Demo</strong>: it replays a real trade from Monday {{ demo_day }}, any time of day, without the internet.</p>
+    </div>
+    <div class="lab-controls">
+        <div class="segmented" role="radiogroup" aria-label="Data mode">
+            <label><input type="radio" name="mode" value="demo" checked><span>Demo replay</span></label>
+            <label><input type="radio" name="mode" value="live"><span>Live data</span></label>
+        </div>
+        <div class="lab-buttons">
+            <button class="btn-ghost" type="button" data-open="settingsDialog">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+                Settings</button>
+            <button class="btn-ghost" type="button" data-open="glossaryDialog">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/></svg>
+                Glossary</button>
+            <button class="btn-ghost" type="button" id="resetBtn">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
+                Start over</button>
+        </div>
+    </div>
+</section>
+
+<div class="mode-banner" id="modeBanner"></div>
+
+<section class="card journey" aria-labelledby="journeyTitle">
+    <div class="card-head">
+        <h2 id="journeyTitle">One trade, step by step</h2>
+        <p class="muted small">Each skill saves its result in a shared folder, and the next one reads it. A tick means that step has a saved result.</p>
+    </div>
+    <ol class="journey-steps" id="journeySteps"></ol>
+    <div class="journey-side">
+        <span class="muted small">Research and watching, any time:</span>
+        <div id="journeySide" class="journey-side-list"></div>
+    </div>
+</section>
+
+<section class="skill-panel card" id="skillPanel" aria-live="polite"></section>
+
+<section class="card notebook" aria-labelledby="filesTitle">
+    <div class="card-head">
+        <h2 id="filesTitle">The shared folder</h2>
+        <p class="muted small" id="filesHint"></p>
+    </div>
+    <div id="fileList" class="file-list"></div>
+</section>
+
+<dialog id="settingsDialog" class="dialog">
+    <form method="dialog" class="dialog-inner" id="settingsForm">
+        <header class="dialog-head">
+            <h2>Your rules</h2>
+            <button class="icon-btn" type="button" data-close aria-label="Close">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            </button>
+        </header>
+        <p class="muted small" id="settingsMode"></p>
+        <div class="form-grid" id="settingsFields"></div>
+        <p class="form-error" id="settingsError" hidden></p>
+        <footer class="dialog-foot">
+            <button class="btn btn-sm btn-quiet" type="button" data-close>Cancel</button>
+            <button class="btn btn-sm btn-primary" type="submit">Save</button>
+        </footer>
+    </form>
+</dialog>
+
+<dialog id="glossaryDialog" class="dialog">
+    <div class="dialog-inner">
+        <header class="dialog-head">
+            <h2>Glossary</h2>
+            <button class="icon-btn" data-close aria-label="Close">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            </button>
+        </header>
+        <dl class="glossary" id="glossaryList"></dl>
+    </div>
+</dialog>
+
+<dialog id="fileDialog" class="dialog dialog-wide">
+    <div class="dialog-inner">
+        <header class="dialog-head">
+            <h2 class="mono" id="fileTitle"></h2>
+            <button class="icon-btn" data-close aria-label="Close">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            </button>
+        </header>
+        <p class="muted small" id="fileAbout"></p>
+        <div id="fileVisual"></div>
+        <details class="raw" id="fileRawWrap">
+            <summary>The raw file</summary>
+            <pre class="code" id="fileRaw"></pre>
+        </details>
+    </div>
+</dialog>
+
+<script type="application/json" id="catalogData">{{ catalog | tojson }}</script>
+{% endblock %}
+
+{% block footer %}Skills from <a href="https://github.com/Jakeschincariol/day-trader-skill" rel="noopener">day-trader-skill</a> (MIT, Jake Schincariol) · Free public data: Yahoo Finance, SEC EDGAR, Nasdaq Trader, House Clerk · Education, not financial advice. Nothing here can place an order.{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('plotly_js') }}"></script>
+<script src="{{ url_for('static', filename='js/trader.js') }}"></script>
+{% endblock %}
